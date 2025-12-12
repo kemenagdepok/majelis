@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GIS Majelis Ta'lim Kota Depok - Data Lengkap</title>
+    <title>GIS Majelis Ta'lim Depok - Layer Kecamatan & Kelurahan</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -12,82 +12,43 @@
     
     <style>
         body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .navbar { background: linear-gradient(90deg, #004d40 0%, #00695c 100%); padding: 1rem; }
+        .navbar { background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%); padding: 1rem; }
         .navbar-brand { color: white !important; font-weight: bold; font-size: 1.5rem; }
-        .stats-card { border: none; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s; }
-        .stats-card:hover { transform: translateY(-5px); }
-        .card-icon { font-size: 2rem; opacity: 0.2; position: absolute; right: 20px; top: 20px; }
-        #map { height: 550px; width: 100%; border-radius: 12px; border: 2px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .map-container { position: relative; }
-        .map-legend { background: white; padding: 10px; border-radius: 8px; position: absolute; bottom: 20px; left: 20px; z-index: 999; box-shadow: 0 2px 5px rgba(0,0,0,0.2); font-size: 0.85rem; }
-        .data-table-container { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        #map { height: 600px; width: 100%; border-radius: 12px; border: 2px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1; }
+        .map-wrapper { position: relative; }
+        .data-table-container { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-top: 20px; }
         .badge-kec { font-size: 0.8rem; padding: 5px 10px; border-radius: 20px; }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        /* Style Popup Leaflet */
+        .leaflet-popup-content-wrapper { border-radius: 8px; }
+        .custom-tooltip { background: transparent; border: none; box-shadow: none; font-weight: bold; color: #333; text-shadow: 1px 1px 0 #fff; }
     </style>
 </head>
 <body>
 
     <nav class="navbar navbar-expand-lg navbar-dark mb-4">
-        <div class="container">
-            <a class="navbar-brand" href="#"><i class="bi bi-geo-fill me-2"></i>SIG Majelis Ta'lim Depok</a>
-            <span class="text-white-50">Visualisasi Data Sebaran MT</span>
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="#"><i class="bi bi-map-fill me-2"></i>SIG Majelis Ta'lim Depok</a>
+            <div class="d-flex text-white">
+                <span id="loading-status" class="badge bg-warning text-dark me-2" style="display:none;">Memuat Peta...</span>
+                <span class="text-white-50 small align-self-center">Data: <span id="total-count">0</span> Titik</span>
+            </div>
         </div>
     </nav>
 
-    <div class="container mb-5">
+    <div class="container-fluid px-4 mb-5">
         
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card stats-card bg-primary text-white h-100">
-                    <div class="card-body">
-                        <h6 class="card-title text-uppercase mb-2">Total Data</h6>
-                        <h2 class="display-4 fw-bold mb-0" id="stat-total">0</h2>
-                        <i class="bi bi-database card-icon"></i>
-                        <small class="text-white-50">Majelis Ta'lim Terdaftar</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card stats-card bg-success text-white h-100">
-                    <div class="card-body">
-                        <h6 class="card-title text-uppercase mb-2">Kecamatan Terbanyak</h6>
-                        <h2 class="mb-0" id="stat-top-kec">-</h2>
-                        <i class="bi bi-trophy card-icon"></i>
-                        <small class="text-white-50" id="stat-top-val">0 Data</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card stats-card bg-info text-white h-100">
-                    <div class="card-body">
-                        <h6 class="card-title text-uppercase mb-2">Status Wilayah</h6>
-                        <h4 class="mb-0">11 Kecamatan</h4>
-                        <i class="bi bi-map card-icon"></i>
-                        <small class="text-white-50">Cakup Seluruh Kota Depok</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row mb-4">
+        <div class="row">
             <div class="col-12">
-                <div class="map-container">
-                    <div id="map"></div>
-                    <div class="map-legend">
-                        <strong>Legenda Warna:</strong><br>
-                        <span style="color:#e63946">●</span> Tapos & Cimanggis<br>
-                        <span style="color:#2a9d8f">●</span> Cipayung & Sawangan<br>
-                        <span style="color:#f4a261">●</span> Beji & Limo<br>
-                        <span style="color:#457b9d">●</span> Sukmajaya & Cilodong<br>
-                        <span style="color:#999">●</span> Lainnya
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-2">
+                        <div class="map-wrapper">
+                            <div id="map"></div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-2 px-2">
+                            <small class="text-muted"><i class="bi bi-info-circle"></i> Gunakan icon layer di pojok kanan atas peta untuk mengatur tampilan wilayah.</small>
+                            <button class="btn btn-sm btn-outline-danger" onclick="resetFilter()"><i class="bi bi-x-circle"></i> Reset Filter Wilayah</button>
+                        </div>
                     </div>
-                </div>
-                <div class="text-end mt-2">
-                    <button class="btn btn-sm btn-outline-secondary" onclick="resetView()"><i class="bi bi-arrow-counterclockwise"></i> Reset Tampilan Peta</button>
                 </div>
             </div>
         </div>
@@ -95,7 +56,7 @@
         <div class="row">
             <div class="col-12">
                 <div class="data-table-container">
-                    <h5 class="mb-4 fw-bold text-secondary"><i class="bi bi-table me-2"></i>Database Majelis Ta'lim</h5>
+                    <h5 class="mb-4 fw-bold text-primary"><i class="bi bi-table me-2"></i>Database Majelis Ta'lim</h5>
                     <div class="table-responsive">
                         <table id="mtTable" class="table table-hover w-100">
                             <thead class="table-light">
@@ -103,7 +64,7 @@
                                     <th>No</th>
                                     <th>Nama Majelis Ta'lim</th>
                                     <th>Kecamatan</th>
-                                    <th>Kelurahan (Estimasi)</th>
+                                    <th>Kelurahan (Est)</th>
                                     <th>Alamat Lengkap</th>
                                     <th>Tahun</th>
                                 </tr>
@@ -115,10 +76,6 @@
             </div>
         </div>
     </div>
-
-    <footer class="text-center py-4 text-muted small">
-        &copy; 2025 Data GIS Majelis Ta'lim Kota Depok
-    </footer>
 
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -533,7 +490,7 @@
         ];
 
         // ==========================================
-        // 2. KONFIGURASI LOGIC
+        // 2. CONFIGURASI & LOGIC
         // ==========================================
         const distrikCenters = {
             "Beji": { lat: -6.372, lng: 106.812 },
@@ -549,18 +506,12 @@
             "Tapos": { lat: -6.420, lng: 106.880 }
         };
 
-        let map, table, geoJsonLayer;
+        let map, table, layerControl;
+        let pointsLayer, kecamatanLayer, kelurahanLayer;
 
         $(document).ready(function() {
-            // A. STATISTIK
-            $('#stat-total').text(allData.length);
-            
-            // Hitung Top Kecamatan
-            let counts = {};
-            allData.forEach(d => { counts[d.kecamatan] = (counts[d.kecamatan] || 0) + 1; });
-            let topKec = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
-            $('#stat-top-kec').text(topKec);
-            $('#stat-top-val').text(counts[topKec] + " Data");
+            // A. UPDATE STATS
+            $('#total-count').text(allData.length);
 
             // B. TABLE INIT
             table = $('#mtTable').DataTable({
@@ -584,30 +535,34 @@
                 attribution: '&copy; OpenStreetMap & CartoDB'
             }).addTo(map);
 
-            // D. PLOT MARKERS
+            // D. LAYER CONTROL INIT
+            layerControl = L.control.layers(null, null, { collapsed: false }).addTo(map);
+
+            // E. LOAD POINTS DATA (MT)
+            let markers = [];
             allData.forEach(item => {
                 let kecKey = Object.keys(distrikCenters).find(k => item.kecamatan.includes(k)) || "Pancoran Mas";
                 let base = distrikCenters[kecKey];
                 
-                // Jitter
+                // Jitter (acak posisi sedikit)
                 let lat = base.lat + (Math.random() - 0.5) * 0.025;
                 let lng = base.lng + (Math.random() - 0.5) * 0.025;
 
-                // Color Coding
-                let color = "#999";
+                // Warna Dot
+                let color = "#333";
                 if(item.kecamatan.includes('Tapos') || item.kecamatan.includes('Cimanggis')) color = "#e63946";
                 else if(item.kecamatan.includes('Cipayung') || item.kecamatan.includes('Sawangan')) color = "#2a9d8f";
                 else if(item.kecamatan.includes('Beji') || item.kecamatan.includes('Limo')) color = "#f4a261";
                 else if(item.kecamatan.includes('Sukmajaya')) color = "#457b9d";
 
-                L.circleMarker([lat, lng], {
+                let marker = L.circleMarker([lat, lng], {
                     radius: 5,
                     fillColor: color,
                     color: "white",
                     weight: 1,
                     opacity: 1,
-                    fillOpacity: 0.8
-                }).addTo(map).bindPopup(`
+                    fillOpacity: 0.9
+                }).bindPopup(`
                     <div class='text-center'>
                         <strong>${item.nama}</strong><br>
                         <span class='badge bg-light text-dark border'>${item.kecamatan}</span>
@@ -615,40 +570,84 @@
                         <small>${item.alamat}</small>
                     </div>
                 `);
+                markers.push(marker);
             });
+            pointsLayer = L.layerGroup(markers).addTo(map);
+            layerControl.addOverlay(pointsLayer, "Titik Majelis Ta'lim");
 
-            // E. GEOJSON
-            $.getJSON("https://raw.githubusercontent.com/yusufsyaifudin/indonesia-geodata/master/data/32-jawa-barat/3276-kota-depok.geojson", function(data) {
-                geoJsonLayer = L.geoJSON(data, {
-                    style: { color: "#333", weight: 1, fillColor: "#3388ff", fillOpacity: 0.05 },
+            // F. LOAD KECAMATAN GEOJSON
+            $('#loading-status').show();
+            $.getJSON("/kecamatan.geojson", function(data) {
+                kecamatanLayer = L.geoJSON(data, {
+                    style: { color: "#0d6efd", weight: 2, fillOpacity: 0.05, dashArray: '5,5' },
                     onEachFeature: function(feature, layer) {
-                        const name = feature.properties.name || feature.properties.NAMOBJ;
-                        layer.bindTooltip(name, { sticky: true });
+                        // Mencari properti nama (sesuaikan jika nama field berbeda di GeoJSON Anda)
+                        let name = feature.properties.NAMOBJ || feature.properties.WADMKC || feature.properties.name || "Kecamatan";
+                        
+                        layer.bindTooltip(name, { sticky: true, className: 'custom-tooltip' });
+                        
                         layer.on('click', function() {
-                            // Highlight
-                            geoJsonLayer.resetStyle();
-                            layer.setStyle({ weight: 3, color: "#d62828", fillOpacity: 0.2 });
+                            resetStyles();
+                            layer.setStyle({ weight: 4, color: "#0d6efd", fillOpacity: 0.2, dashArray: '' });
                             map.fitBounds(layer.getBounds());
                             
-                            // Filter Table
-                            let cleanName = name.replace("Kecamatan", "").replace("Kelurahan", "").trim();
+                            // Filter Table by Kecamatan Name
+                            let cleanName = name.replace("Kecamatan", "").trim();
                             table.search(cleanName).draw();
                         });
                     }
-                }).addTo(map);
+                }).addTo(map); // Default tampil
+                layerControl.addOverlay(kecamatanLayer, "Batas Kecamatan");
+                $('#loading-status').hide();
+            }).fail(function() {
+                console.log("Gagal memuat /kecamatan.geojson");
+                $('#loading-status').text("Gagal Load Peta").addClass("bg-danger");
             });
+
+            // G. LOAD KELURAHAN GEOJSON
+            $.getJSON("/kelurahan.geojson", function(data) {
+                kelurahanLayer = L.geoJSON(data, {
+                    style: { color: "#198754", weight: 1, fillOpacity: 0.0, dashArray: '2,4' },
+                    onEachFeature: function(feature, layer) {
+                        let name = feature.properties.NAMOBJ || feature.properties.WADMKD || feature.properties.name || "Kelurahan";
+                        
+                        layer.bindTooltip(name, { sticky: true, className: 'custom-tooltip' });
+                        
+                        layer.on('click', function() {
+                            resetStyles();
+                            layer.setStyle({ weight: 3, color: "#198754", fillOpacity: 0.2, dashArray: '' });
+                            map.fitBounds(layer.getBounds());
+
+                            // Filter Table by Kelurahan Name
+                            let cleanName = name.replace("Kelurahan", "").replace("Desa", "").trim();
+                            table.search(cleanName).draw();
+                        });
+                    }
+                });
+                // Tidak addTo(map) agar tidak menumpuk diawal, user bisa menyalakan lewat control
+                layerControl.addOverlay(kelurahanLayer, "Batas Kelurahan");
+            }).fail(function() {
+                console.log("Gagal memuat /kelurahan.geojson");
+            });
+
         });
+
+        function resetStyles() {
+            if(kecamatanLayer) kecamatanLayer.resetStyle();
+            if(kelurahanLayer) kelurahanLayer.resetStyle();
+        }
+
+        function resetFilter() {
+            map.setView([-6.395, 106.810], 12);
+            resetStyles();
+            table.search('').draw();
+        }
 
         function detectKelurahan(addr, kec) {
             if(!addr) return "";
+            // Regex sederhana untuk menangkap kata setelah "Kel." atau "Kelurahan"
             let match = addr.match(/(?:Kel\.|Kelurahan)\s*([A-Za-z\s]+?)(?:,|$)/i);
             return match ? match[1].trim() : "";
-        }
-
-        function resetView() {
-            map.setView([-6.395, 106.810], 12);
-            if(geoJsonLayer) geoJsonLayer.resetStyle();
-            table.search('').draw();
         }
     </script>
 </body>
