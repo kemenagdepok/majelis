@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GIS Majelis Ta'lim Depok - Full Embed</title>
+    <title>GIS Majelis Ta'lim Kota Depok (Fixed)</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -11,19 +11,21 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
     <style>
-        body { background-color: #f8f9fa; }
-        .navbar { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); }
-        #map { height: 650px; width: 100%; border-radius: 8px; border: 2px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .badge-kec { cursor: pointer; }
-        .legend-info { font-size: 0.85rem; background: white; padding: 5px 10px; border-radius: 4px; border: 1px solid #ccc; }
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
+        .navbar { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); }
+        #map { height: 650px; width: 100%; border-radius: 8px; border: 3px solid #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .badge-kec { cursor: pointer; transition: 0.2s; }
+        .badge-kec:hover { background-color: #0d6efd !important; }
+        .legend-box { background: white; padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 12px; }
+        .leaflet-popup-content { font-size: 13px; }
     </style>
 </head>
 <body>
 
     <nav class="navbar navbar-dark mb-4 shadow-sm">
-        <div class="container-fluid">
-            <span class="navbar-brand mb-0 h1"><i class="bi bi-geo-alt-fill me-2"></i>SIG Majelis Ta'lim Kota Depok</span>
-            <span class="text-white small">Total: <span id="total-count" class="fw-bold">0</span> Lokasi</span>
+        <div class="container-fluid px-4">
+            <span class="navbar-brand mb-0 h1"><i class="bi bi-map-fill me-2"></i>SIG Majelis Ta'lim Depok</span>
+            <span class="text-white small">Total Data: <span id="total-count" class="fw-bold text-warning">0</span> Lokasi</span>
         </div>
     </nav>
 
@@ -33,32 +35,35 @@
                 <div class="card border-0 shadow-sm">
                     <div class="card-body p-2 position-relative">
                         <div id="map"></div>
-                        <div class="position-absolute bottom-0 start-0 m-3 legend-info" style="z-index: 999;">
-                            <i class="bi bi-square-fill" style="color: #3388ff; opacity: 0.5;"></i> Batas Kecamatan<br>
-                            <i class="bi bi-square-fill" style="color: #198754; opacity: 0.3;"></i> Batas Kelurahan<br>
-                            <i class="bi bi-circle-fill" style="color: #dc3545;"></i> Lokasi MT
+                        
+                        <div class="position-absolute bottom-0 start-0 m-3 legend-box" style="z-index: 999;">
+                            <div class="mb-1"><i class="bi bi-square-fill text-primary opacity-50"></i> Batas Kecamatan</div>
+                            <div class="mb-1"><i class="bi bi-square-fill text-success opacity-25"></i> Batas Kelurahan</div>
+                            <div><i class="bi bi-circle-fill text-danger"></i> Lokasi MT</div>
                         </div>
                     </div>
-                    <div class="card-footer bg-white d-flex justify-content-between align-items-center">
-                        <small class="text-muted"><i class="bi bi-hand-index-thumb"></i> Klik area peta untuk filter tabel di bawah.</small>
-                        <button class="btn btn-sm btn-outline-danger" onclick="resetAll()"><i class="bi bi-arrow-counterclockwise"></i> Reset Filter</button>
+                    <div class="card-footer bg-white d-flex justify-content-between">
+                        <small class="text-muted fst-italic">Klik area pada peta untuk filter tabel otomatis.</small>
+                        <button class="btn btn-sm btn-outline-danger" onclick="resetAll()"><i class="bi bi-arrow-counterclockwise"></i> Reset Tampilan</button>
                     </div>
                 </div>
             </div>
 
             <div class="col-lg-12 mb-5">
                 <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white fw-bold"><i class="bi bi-table me-2"></i>Data Detail Majelis Ta'lim</div>
+                    <div class="card-header bg-white fw-bold py-3">
+                        <i class="bi bi-table me-2"></i>Daftar Majelis Ta'lim
+                    </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table id="mtTable" class="table table-hover table-striped w-100">
+                            <table id="mtTable" class="table table-hover table-striped w-100 align-middle">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>No</th>
+                                        <th width="5%">No</th>
                                         <th>Nama Majelis Ta'lim</th>
                                         <th>Kecamatan</th>
                                         <th>Kelurahan (Est)</th>
-                                        <th>Alamat</th>
+                                        <th>Alamat Lengkap</th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
@@ -78,436 +83,50 @@
 
     <script>
         // ==========================================
-        // BAGIAN 1: DATA GEOJSON (Ditanam Langsung)
+        // 1. DATA (Embedded dari File Upload Anda)
         // ==========================================
         
-        // Data Kecamatan dari file user (nm_kecamatan)
-        const kecamatanGeoJSON = `
-        ${kec_json_str}
-        `;
+        // Data MT (439 Record dari CSV)
+        const mtData = `
+        ${mt_data_json}
+        `; // Placeholder Python akan mengisi ini
+        const parsedMTData = JSON.parse(mtData);
 
-        // Data Kelurahan dari file user (nm_kelurahan)
-        const kelurahanGeoJSON = `
-        ${kel_json_str}
-        `;
+        // Data Kecamatan (dari kecamatan.geojson)
+        const kecData = `
+        ${kec_data_json}
+        `; // Placeholder Python akan mengisi ini
+        const parsedKecData = JSON.parse(kecData);
 
-        // Data Majelis Ta'lim (439 Record)
-        const mtData = [
-            {"nama": "MT. Nurul Mubtadi-ien", "kecamatan": "Cipayung", "alamat": "Jl. Gg. Al Barkah, No. 59, RT. 07 RW. 08, Pondok Terong, Kel. Bojong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Qolbi", "kecamatan": "Cipayung", "alamat": "Kp. Lio, RT. 02/08, Ke;. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al Hidayah", "kecamatan": "Cipayung", "alamat": "Kp. Lio, RT. 02/08, Ke;. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Ihsan", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Lio, RT. 02/013, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Falah", "kecamatan": "Cipayung", "alamat": "Jl. Laskar, Gg. Musholla Al-Falah, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Ittihad", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Lio, RT. 05/013, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Lio, RT. 04/013, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Cipayung", "alamat": "Gg. Musholla, RT. 06/02, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Hikmah", "kecamatan": "Cipayung", "alamat": "Kp. Pulo, RT. 03/09, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. As-Syifa", "kecamatan": "Cipayung", "alamat": "Kp. Pulo, RT. 03/010, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Khoirun Nisa", "kecamatan": "Cipayung", "alamat": "Kp. Pulo, RT. 02/010, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Hikmah", "kecamatan": "Cipayung", "alamat": "Kp. Pulo, RT. 03/010, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Fastabiqul Khoirot", "kecamatan": "Cipayung", "alamat": "Kp. Pulo, Gg. Swadaya, RT. 03/010 Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Ikhlas", "kecamatan": "Cipayung", "alamat": "Jl. Bulak Barat, RT. 05/08, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Husna", "kecamatan": "Cipayung", "alamat": "Kp. Benda Barat, RT. 05/06, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Hidayah", "kecamatan": "Cipayung", "alamat": "Kp. Benda Barat, Jl. Pertanian, RT. 05/06 Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Jannah", "kecamatan": "Cipayung", "alamat": "Komplek Pertanian, RT. 04/013, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Ikhwan", "kecamatan": "Cipayung", "alamat": "Jl. Rawasari, RT. 02/06, Kel. Cipayung Jaya, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Muwahidin", "kecamatan": "Cipayung", "alamat": "Kp. Pulo, RT. 01/09, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Hidayah", "kecamatan": "Cipayung", "alamat": "Kp. Pulo, RT. 02/010, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Ittihadiyah", "kecamatan": "Cipayung", "alamat": "Jl. Masjid Al-Ittihad, RT. 02/04 Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Baiturrahim", "kecamatan": "Cipayung", "alamat": "Kp. Stangkle, Jl. Kramat, RT. 03/04 Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Cipayung", "alamat": "Kp. Stangkle, Jl. Kramat, RT. 03/05 Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Cipayung", "alamat": "Jl. Bonang, RT. 03/05, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Hikmah", "kecamatan": "Cipayung", "alamat": "Jl. Pule, RT. 01/010, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Istiqomah", "kecamatan": "Cipayung", "alamat": "Jl. Pule, RT. 02/010, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Hikmah", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Lio, RT. 02/013, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Cipayung", "alamat": "Kp. Stangkle, RT. 02/06, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Miftahul Jannah", "kecamatan": "Cipayung", "alamat": "Kp. Stangkle, RT. 04/06, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Baiturrahman", "kecamatan": "Cipayung", "alamat": "Kp. Lio, RT. 03/019, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Khoiriyah", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Lio, RT. 05/013, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Ma'mur", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Lio, RT. 03/013, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Khairunnisa", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Lio, RT. 04/013, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Ar-Ridho", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Lio, Gg. Situ, RT. 01/019 Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Lio, Gg. Situ, RT. 01/019 Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Ar-Rahman", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Lio, Gg. Situ, RT. 02/019 Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Huda", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Lio, Gg. Situ, RT. 02/019 Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Khairunnisa", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Lio, Gg. Situ, RT. 02/019 Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Falah", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Lio, Gg. Situ, RT. 03/019 Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Ar-Rahmah", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Lio, Gg. Situ, RT. 05/019 Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Hidayah", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Lio, Gg. Situ, RT. 07/019 Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Ittihad", "kecamatan": "Cipayung", "alamat": "Jl. Citayam, Gg. Nyamuk, RT. 01/02 Kel. Pondok Jaya, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Falah", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Utan, Gg. Kupu-Kupu, RT. 06/05 Kel. Pondok Jaya, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. As-Syifa", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Utan, RT. 04/05, Kel. Pondok Jaya, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Khairunnisa", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Utan, RT. 02/04, Kel. Pondok Jaya, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Istiqomah", "kecamatan": "Cipayung", "alamat": "Jl. Rawasari 2, RT. 04/06, Kel. Cipayung Jaya, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. As-Salamah", "kecamatan": "Cipayung", "alamat": "Jl. Rawasari 1, RT. 01/05, Kel. Cipayung Jaya, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. As-Syakirin", "kecamatan": "Cipayung", "alamat": "Jl. Rawasari 1, RT. 03/05, Kel. Cipayung Jaya, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Cipayung", "alamat": "Jl. Rawasari 1, RT. 02/05, Kel. Cipayung Jaya, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Furqon", "kecamatan": "Cipayung", "alamat": "Jl. Pitara Raya, Jembatan Serong RT. 06/02, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Amin", "kecamatan": "Cipayung", "alamat": "Jl. Jembatan Serong, Gg. Masjid RT. 04/02, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. As-Sakinah", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Benda Barat, RT. 05/06 Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Huda", "kecamatan": "Cipayung", "alamat": "Jl. H. Terin, RT. 04/03, Kel. Cipayung Jaya, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Musyawarah", "kecamatan": "Cipayung", "alamat": "Jl. H. Terin, RT. 04/03, Kel. Cipayung Jaya, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. An-Nur", "kecamatan": "Cipayung", "alamat": "Jl. H. Terin, RT. 01/03, Kel. Cipayung Jaya, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Inayah", "kecamatan": "Cipayung", "alamat": "Jl. H. Terin, RT. 02/03, Kel. Cipayung Jaya, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. An-Najah", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Benda, RT. 05/06, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Cipayung", "alamat": "Kp. Bulak Barat, RT. 05/07, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Ihsan", "kecamatan": "Cipayung", "alamat": "Kp. Bulak Barat, RT. 05/08, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Cipayung", "alamat": "Kp. Bulak Barat, RT. 03/08, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Cipayung", "alamat": "Kp. Bulak Barat, RT. 03/07, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Istiqomah", "kecamatan": "Cipayung", "alamat": "Kp. Bulak Barat, RT. 06/07, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Cipayung", "alamat": "Jl. Bulak Timur, RT. 02/09, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Muqorrobin", "kecamatan": "Cipayung", "alamat": "Jl. Bulak Timur, RT. 05/010, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Hidayah", "kecamatan": "Cipayung", "alamat": "Jl. Bulak Timur, RT. 03/09, Kel. Cipayung, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Cipayung", "alamat": "Jl. H. Bonang, RT. 03/05, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Ittihad", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Lio, RT. 05/013, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Lio, RT. 04/013, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Al-Ihsan", "kecamatan": "Cipayung", "alamat": "Jl. Kp. Lio, RT. 02/013, Kel. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
-            {"nama": "MT. Nurul Mubtadi-ien", "kecamatan": "Cipayung", "alamat": "Jl. Gg. Al Barkah, No. 59, RT. 07 RW. 08, Pondok Terong, Kel. Bojong Pondok Terong", "tahun": ""},
-            {"nama": "Jama'ah Subur", "kecamatan": "Beji", "alamat": "Jl. Sanur Blok AG, NO. 2, RT. 01 RW. 016, Depok Mulya II", "tahun": "1970"},
-            {"nama": "MT. Baiturrahim", "kecamatan": "Beji", "alamat": "Jl. P. Nias Raya, RT. 02/017 Kel. Beji, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Al-Muhajirin", "kecamatan": "Beji", "alamat": "Jl. Nusantara Raya, No. 162, RT. 03/12 Kel. Beji, Kec. Beji", "tahun": "1988"},
-            {"nama": "MT. Mambaul Khoirot", "kecamatan": "Beji", "alamat": "Jl. KH. M. Usman, No. 129, RT. 04/04 Kel. Kukusan, Kec. Beji", "tahun": ""},
-            {"nama": "MT. As-Syakirin", "kecamatan": "Beji", "alamat": "Jl. H. Asmawi, No. 63, RT. 01/05 Kel. Beji, Kec. Beji", "tahun": "1987"},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Beji", "alamat": "Jl. H. Asmawi, No. 106, RT. 04/15 Kel. Beji, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Sirajul Athfal", "kecamatan": "Beji", "alamat": "Jl. H. Asmawi, RT. 03/05 Kel. Beji, Kec. Beji", "tahun": "2010"},
-            {"nama": "MT. Fastabiqul Khoirot", "kecamatan": "Beji", "alamat": "Jl. H. Asmawi, No. 84, RT. 05/15 Kel. Beji, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Daarul Muttaqien", "kecamatan": "Beji", "alamat": "Jl. Kembang Beji, No. 25, RT. 03/03 Kel. Beji, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Ar-Rahman", "kecamatan": "Beji", "alamat": "Jl. Arif Rahman Hakim, Gg. Kembang, RT. 02/03 Kel. Beji, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Ikhwanul Muslimin", "kecamatan": "Beji", "alamat": "Jl. H. Asmawi, No. 122, RT. 04/15 Kel. Beji, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Al-Istiqomah", "kecamatan": "Beji", "alamat": "Jl. Kembang Beji, No. 36, RT. 02/03 Kel. Beji, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Beji", "alamat": "Jl. Kembang Beji, Gg. H. Kenan, RT. 05/03 Kel. Beji, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Al-Barokah", "kecamatan": "Beji", "alamat": "Jl. H. Asmawi, RT. 01/15 Kel. Beji, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Nurul Hidayah", "kecamatan": "Beji", "alamat": "Jl. Kembang Beji, No. 22, RT. 04/03 Kel. Beji, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Babul Jannah", "kecamatan": "Beji", "alamat": "Jl. H. Asmawi, RT. 02/05 Kel. Beji, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Raudhatul Jannah", "kecamatan": "Beji", "alamat": "Jl. H. Asmawi, Gg. Walet, RT. 03/05 Kel. Beji, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Al-Ittihad", "kecamatan": "Beji", "alamat": "Jl. H. Asmawi, RT. 04/05 Kel. Beji, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Nurul Falah", "kecamatan": "Beji", "alamat": "Jl. H. Asmawi, No. 125, RT. 04/15 Kel. Beji, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Baiturrahim", "kecamatan": "Beji", "alamat": "Jl. P. Nias Raya, RT. 02/17 Kel. Beji, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Al-Awwabin", "kecamatan": "Beji", "alamat": "Jl. H. Asmawi, No. 67, RT. 01/05 Kel. Beji, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Al-Ikhlas", "kecamatan": "Beji", "alamat": "Jl. Belimbing I, No. 11, RT. 05/01, Kel. Pondok Cina, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Al-Mu'minun", "kecamatan": "Beji", "alamat": "Jl. Kapuk, RT. 02/01, Kel. Pondok Cina, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Miftahul Jannah", "kecamatan": "Beji", "alamat": "Jl. Karet, RT. 01/05, Kel. Pondok Cina, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Nurul Hidayah", "kecamatan": "Beji", "alamat": "Jl. Margonda Raya, Gg. H. Mahali, RT. 02/04 Kel. Pondok Cina, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Nurul Khoir", "kecamatan": "Beji", "alamat": "Jl. Pinang, No. 25, RT. 03/04 Kel. Pondok Cina, Kec. Beji", "tahun": ""},
-            {"nama": "MT. At-Taqwa", "kecamatan": "Beji", "alamat": "Jl. Pinang, RT. 02/04 Kel. Pondok Cina, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Beji", "alamat": "Jl. Kemiri Muka, RT. 03/011, Kel. Kemiri Muka, Kec. Beji", "tahun": ""},
-            {"nama": "MT. Khairunnisa", "kecamatan": "Sukmajaya", "alamat": "Jl. Kemakmuran Raya, No. 10 RT. 06/01, Kel. Mekarjaya", "tahun": ""},
-            {"nama": "MT. As-Sakinah", "kecamatan": "Sukmajaya", "alamat": "Jl. Rasamala Raya, No. 1, RT. 03/020 Kel. Bakti Jaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Sukmajaya", "alamat": "Jl. Keadilan Raya, RT. 05/01, Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Miftahul Jannah", "kecamatan": "Sukmajaya", "alamat": "Jl. Keadilan Raya, No. 268A, RT. 07/01 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Sukmajaya", "alamat": "Jl. Keadilan Raya, Ujung, RT. 06/01 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. As-Syuhada", "kecamatan": "Sukmajaya", "alamat": "Jl. Keadilan Raya, No. 136, RT. 01/014 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Muhajirin", "kecamatan": "Sukmajaya", "alamat": "Jl. Cisokan 4, No. 182, RT. 03/014 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Baiturrahim", "kecamatan": "Sukmajaya", "alamat": "Jl. Cisokan 3, RT. 05/014 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 03/01 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Barokah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 04/01 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. As-Sakinah", "kecamatan": "Sukmajaya", "alamat": "Jl. Keadilan Raya, RT. 06/01 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Nurul Falah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 02/021 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Mutaqin", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 03/021 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 04/021 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Ikhlas", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 05/021 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Istiqomah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 06/021 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Muttaqin", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 01/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Nurul Hidayah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 02/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Hikmah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 03/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Barokah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 04/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Ikhlas", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 05/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Muhajirin", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 06/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 07/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Musyawarah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 08/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 09/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Nurul Hikmah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 10/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Barkah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 11/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 12/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Amin", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 13/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. As-Syifa", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 14/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 15/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Ikhlas", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 16/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Muttaqin", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 17/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Nurul Falah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 18/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Barokah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 19/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 20/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 21/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Musyawarah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 22/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Nurul Hikmah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 23/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Barkah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 24/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 25/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Amin", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 26/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. As-Syifa", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 27/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Ikhlas", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 28/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Muttaqin", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 29/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Nurul Falah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 30/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Barokah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 31/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 32/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 33/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Musyawarah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 34/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Nurul Hikmah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 35/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Barkah", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 36/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 37/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Amin", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 38/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. As-Syifa", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 39/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Ikhlas", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 40/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Al-Muttaqin", "kecamatan": "Sukmajaya", "alamat": "Jl. Tole Iskandar, Gg. H. Japat, RT. 41/022 Kel. Abadijaya, Kec. Sukmajaya", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Limo", "alamat": "Jl. H. Buang, No. 24, RT. 03/03, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Barkah", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, Gg. Kocor, RT. 05/09 Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Nurul Falah", "kecamatan": "Limo", "alamat": "Jl. Kp. Sawah, No. 12, RT. 02/02, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Muwahidin", "kecamatan": "Limo", "alamat": "Jl. H. Buang, RT. 03/03, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Husna", "kecamatan": "Limo", "alamat": "Jl. H. Buang, RT. 02/03, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Hikmah", "kecamatan": "Limo", "alamat": "Jl. H. Buang, RT. 01/03, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Ittihad", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 01/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Ikhlas", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 02/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 03/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Istiqomah", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 04/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Barokah", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 05/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 06/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 07/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Nurul Hikmah", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 08/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. As-Salam", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 09/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. As-Syifa", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 10/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. At-Taqwa", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 11/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Muhajirin", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 12/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Muttaqin", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 13/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Musyawarah", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 14/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Amin", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 15/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Inayah", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 16/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Furqon", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 17/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Kautsar", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 18/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Falah", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 19/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Huda", "kecamatan": "Limo", "alamat": "Jl. Pendowo Raya, RT. 20/09, Kel. Limo, Kec. Limo", "tahun": ""},
-            {"nama": "MT. Al-Ikhlas", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 02/02 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 03/02 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 04/02 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Barokah", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 05/02 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 06/02 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. As-Salam", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 01/03 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. As-Syifa", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 02/03 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. At-Taqwa", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 03/03 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Muhajirin", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 04/03 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Muttaqin", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 05/03 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Musyawarah", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 06/03 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Amin", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 01/04 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Inayah", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 02/04 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Furqon", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 03/04 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Kautsar", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 04/04 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Falah", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 05/04 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Huda", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 06/04 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 01/05 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 02/05 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Barokah", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 03/05 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 04/05 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. As-Salam", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 05/05 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. As-Syifa", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 06/05 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. At-Taqwa", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 01/06 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Muhajirin", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 02/06 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Muttaqin", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 03/06 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Musyawarah", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 04/06 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Amin", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 05/06 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Inayah", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 06/06 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Furqon", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 01/07 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Kautsar", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 02/07 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Falah", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 03/07 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Huda", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 04/07 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 05/07 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 06/07 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Barokah", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 01/08 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 02/08 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. As-Salam", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 03/08 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. As-Syifa", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 04/08 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. At-Taqwa", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 05/08 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Muhajirin", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 06/08 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Muttaqin", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 01/09 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Musyawarah", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 02/09 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Amin", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 03/09 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Inayah", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 04/09 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Furqon", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 05/09 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Kautsar", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 06/09 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "MT. Al-Falah", "kecamatan": "Sawangan", "alamat": "Jl. Raya Muchtar, Gg. Masjid, RT. 01/010 Kel. Sawangan, Kec. Sawangan", "tahun": ""},
-            {"nama": "Al - Ikhlas", "kecamatan": "Cimanggis", "alamat": "Kel. Harjamukti", "tahun": ""},
-            {"nama": "Nurul Iman", "kecamatan": "Cimanggis", "alamat": "Kel. Harjamukti", "tahun": ""},
-            {"nama": "Formal", "kecamatan": "Cimanggis", "alamat": "Kel. Harjamukti", "tahun": ""},
-            {"nama": "MT. Kelompok PKK RW 03", "kecamatan": "Cimanggis", "alamat": "Jl. Masjid Al Ikhlas RT. 005/003, Kel. Cisolok Pasar Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Al - Khairiyah", "kecamatan": "Cimanggis", "alamat": "Jl. Alamanda RT. 08/07 Kel. Tugu, Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Al Istiqomah Tugu", "kecamatan": "Cimanggis", "alamat": "Jl. Alamanda No. 17 RT. 008/007", "tahun": ""},
-            {"nama": "MT. As Sa'adah", "kecamatan": "Cimanggis", "alamat": "Jl. H. Ichang RT.01/02 Kp. Palsigunung", "tahun": ""},
-            {"nama": "MT. Nurussa'adah", "kecamatan": "Cimanggis", "alamat": "Jl. Nurul Hikmah III, No. 52 Kelapa Dua, RT. 006/011 Kel. Tugu", "tahun": ""},
-            {"nama": "MT. Ar Royyan", "kecamatan": "Cimanggis", "alamat": "Jl. Swadaya I, No. 58, RT. 04/10 Kelapa Dua, Tugu, Cimanggis", "tahun": ""},
-            {"nama": "MT. As Syifa", "kecamatan": "Cimanggis", "alamat": "Palsigunung RT. 01/01, No. 36 Kel. Tugu, Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. An Nuriah", "kecamatan": "Cimanggis", "alamat": "Kelapa Dua RT. 02/09 Kel. Tugu, Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Al Istiqomah", "kecamatan": "Cimanggis", "alamat": "Areman Residen, Jl. H. Abdul Mutholib,No. 15, RT. 04/08 Kel. Tugu, Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. As Syairiah", "kecamatan": "Cimanggis", "alamat": "Kel. Tugu, Kec. Cimanggis Jl. H. Icang, RT. 08/01 Kp. Palsigunung, Kel. Tugu", "tahun": ""},
-            {"nama": "MT. Al Muna", "kecamatan": "Cimanggis", "alamat": "Jl. Masjid Uswatun Hasanah RT. 04/06, Kel. Curug Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Al Amanah", "kecamatan": "Cimanggis", "alamat": "Jl. Sadar Kelapa Dua, RT.08/10 Kel. Tugu, Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Al Husna", "kecamatan": "Cimanggis", "alamat": "Jl. Taman Duta 7, Blok E7, No. 3 Perumahan Pondok Duta Kec. Cimanggis, Depok", "tahun": ""},
-            {"nama": "MT. Kaum Ibu", "kecamatan": "Cimanggis", "alamat": "Kp. Pondok Ranggon, RT. 003/006 Musholla Birul Walidain Kel. Harjamukti, Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Assayyidatul Amanah", "kecamatan": "Cimanggis", "alamat": "Jl. Yudistira, No. 16, RT. 03/03 Kel. Harjamukti, Cimanggis", "tahun": ""},
-            {"nama": "Majelis Ta'lim Formal", "kecamatan": "Cimanggis", "alamat": "", "tahun": ""},
-            {"nama": "Al - Ikhlas", "kecamatan": "Cimanggis", "alamat": "Jl. Kauling,Kp. Pondok Ranggon Harjamkuti,RT. 002/006 Cimanggis", "tahun": ""},
-            {"nama": "Al - Innayah", "kecamatan": "Cimanggis", "alamat": "Kp. Pondok Ranggon, RT. 04/06 Harjamukti", "tahun": ""},
-            {"nama": "At - Toyyibah", "kecamatan": "Cimanggis", "alamat": "Kp. Pondok Ranggon, RT. 06/06 Harjamukti", "tahun": ""},
-            {"nama": "Al - Muhsinin", "kecamatan": "Cimanggis", "alamat": "Jl. Pringgodani Raya, RT/005/009 Kp. Kalimanggis, Kel. Harjamukti", "tahun": ""},
-            {"nama": "Al - Ashar", "kecamatan": "Cimanggis", "alamat": "Padurenan Depok, RT. 01/02 Kel. Cisalak Pasa, Cimanggis", "tahun": ""},
-            {"nama": "Al - Mumin", "kecamatan": "Cimanggis", "alamat": "Jl. Bungur Raya, RT. 03/07 Kel. Harjamukti, Kec. Cimanggis", "tahun": ""},
-            {"nama": "Al - Ikhlas", "kecamatan": "Cimanggis", "alamat": "Komp. DEPPEN - HBTB RT. 08/11 Kel. Harjamukti, Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Nur'aini", "kecamatan": "Cimanggis", "alamat": "Kelapa Dua, RT. 04/09 Kel. Tugu, Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Arrahman", "kecamatan": "Cimanggis", "alamat": "Kelapa Dua, RT. 05/09 Kel. Tugu, Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Al Hamidiyah", "kecamatan": "Cimanggis", "alamat": "Tipar RT. 001/010 Kel. Mekar Jaya, Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Al - Hasanah", "kecamatan": "Cimanggis", "alamat": "Jl. Nipan, No. 8, Palsigunung RT. 09/02, Kel. Tugu, Cimanggis", "tahun": ""},
-            {"nama": "MT. Al - Hasanah", "kecamatan": "Cimanggis", "alamat": "Areman, RT. 005/008 Kel. Tugu, Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Subulassalam", "kecamatan": "Cimanggis", "alamat": "Palsigunung, RT. 002/004 Kel. Tugu, Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Asmaul Husna", "kecamatan": "Cimanggis", "alamat": "Jl. H. Ramin No. 19, RT. 03/09 Kel. Mekarsari, Cimanggis", "tahun": ""},
-            {"nama": "MT. Ngopi", "kecamatan": "Cimanggis", "alamat": "Jl. Alamanda Areman,RT. 10/07 Kel. Tugu, Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Raudhatus Salamah", "kecamatan": "Cimanggis", "alamat": "Jl. Raya Bogor, KM. 30, Gg. Roda Palsigunung, RT. 03/02 Kel. Mekarsari, Cimanggis", "tahun": ""},
-            {"nama": "MT. Al - Maghfiroh", "kecamatan": "Cimanggis", "alamat": "Jl. Setu Pedongkelan Areman RT. 05/05, Kel. Tugu Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Darul Muttaqin", "kecamatan": "Cimanggis", "alamat": "Jl. Kelapa Dua Raya, Gg. Inpres No. 89, RT. 01/11, Kel. Tugu Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Bani Noin", "kecamatan": "Cimanggis", "alamat": "Jl. RTM, Gg. H. Muin Kelapa Dua, Tugu, Cimanggis", "tahun": ""},
-            {"nama": "MT. Malam Senin", "kecamatan": "Cimanggis", "alamat": "Jl. Alamanda Areman, RT. 08/07 Kel. Tugu, Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. As Syifa", "kecamatan": "Cimanggis", "alamat": "Areman RT. 001/008 Kel. Tugu, Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Al - Inayah", "kecamatan": "Cimanggis", "alamat": "Gg. Utama Areman, RT. 011/008 Kel. Tugu, Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Muchtariyah", "kecamatan": "Cimanggis", "alamat": "Jl. Akses UI, Gg. H. Muchtar Kelapa Dua, RT. 02/09 Kel. Tugu, Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Khoirunnisa", "kecamatan": "Cimanggis", "alamat": "Jl. Gotong Royong, Kp. Areman RT. 09/08, Tugu, Cimanggis", "tahun": ""},
-            {"nama": "MT. An-Nur", "kecamatan": "Cimanggis", "alamat": "Jl. H. Hasan Areman, RT. 06/05 Kel. Tugu, Kec. Cimanggis", "tahun": ""},
-            {"nama": "MT. Miftahul Jannah", "kecamatan": "Cimanggis", "alamat": "Tipar, RT. 002/010 Kel. Mekarsari, Cimanggis", "tahun": ""},
-            {"nama": "MT. Nurul Mukhlisin", "kecamatan": "Cimanggis", "alamat": "Jl. Bhineka IV, Kp. Rumbut RT. 005/009, Kel. Pasir Gunung Selatan, Cimanggis", "tahun": ""},
-            {"nama": "MT. Sa'adatul Musthofa", "kecamatan": "Cimanggis", "alamat": "Jl. Persatuan I, No. 28, RT. 08/01 Kel. Pasir Gunung Selatan Cimanggis", "tahun": ""},
-            {"nama": "MT. Darus Sa'adah", "kecamatan": "Cimanggis", "alamat": "Jl. Persatuan 1, No. 28, RT. 28/8 Kel. Pasirgunung Selatan Kec. Cimanggis, Depok", "tahun": ""},
-            {"nama": "MT. Al Jannah", "kecamatan": "Cimanggis", "alamat": "Jl. Bungur Raya, Gang Damai No. 44, RT. 002/007, Cimanggis", "tahun": ""},
-            {"nama": "MT. Zikir dan Sholawat", "kecamatan": "Cimanggis", "alamat": "Gang Adam RT. 009/ RW. 003 Nurul Qolbi Palsi Gunung, Kel. Tugu Cimanggis, Kota Depok", "tahun": ""},
-            {"nama": "Al Abror", "kecamatan": "Tapos", "alamat": "Jl. BDB, Cilangkap", "tahun": ""},
-            {"nama": "MT. Nurul Falah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 02/01, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Ikhlas", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 03/01, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 04/01, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Barokah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 05/01, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 06/01, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 01/02, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Muttaqin", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 02/02, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Musyawarah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 03/02, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Amin", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 04/02, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Inayah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 05/02, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Furqon", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 06/02, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Kautsar", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 01/03, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Falah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 02/03, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Huda", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 03/03, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 04/03, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 05/03, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Barokah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 06/03, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 01/04, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. As-Salam", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 02/04, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. As-Syifa", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 03/04, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. At-Taqwa", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 04/04, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Muhajirin", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 05/04, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Muttaqin", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 06/04, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Musyawarah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 01/05, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Amin", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 02/05, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Inayah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 03/05, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Furqon", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 04/05, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Kautsar", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 05/05, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Falah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 06/05, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Huda", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 01/06, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 02/06, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 03/06, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Barokah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 04/06, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 05/06, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. As-Salam", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 06/06, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. As-Syifa", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 01/07, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. At-Taqwa", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 02/07, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Muhajirin", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 03/07, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Muttaqin", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 04/07, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Musyawarah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 05/07, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Amin", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 06/07, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Inayah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 01/08, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Furqon", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 02/08, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Kautsar", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 03/08, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Falah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 04/08, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Huda", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 05/08, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 06/08, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 01/09, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Barokah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 02/09, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 03/09, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. As-Salam", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 04/09, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. As-Syifa", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 05/09, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. At-Taqwa", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 06/09, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Muhajirin", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 01/010, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Muttaqin", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 02/010, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Musyawarah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 03/010, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Amin", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 04/010, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Inayah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 05/010, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Furqon", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 06/010, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Kautsar", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 01/011, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Falah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 02/011, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Huda", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 03/011, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 04/011, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 05/011, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Barokah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 06/011, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 01/012, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. As-Salam", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 02/012, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. As-Syifa", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 03/012, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. At-Taqwa", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 04/012, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Muhajirin", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 05/012, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Muttaqin", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 06/012, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Musyawarah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 01/013, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Amin", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 02/013, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Inayah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 03/013, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Furqon", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 04/013, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Kautsar", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 05/013, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Falah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 06/013, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Huda", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 01/014, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Nurul Iman", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 02/014, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Hidayah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 03/014, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Barokah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 04/014, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Nurul Huda", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 05/014, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. As-Salam", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 06/014, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. As-Syifa", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 01/015, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. At-Taqwa", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 02/015, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Muhajirin", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 03/015, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Muttaqin", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 04/015, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Musyawarah", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 05/015, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Al-Amin", "kecamatan": "Tapos", "alamat": "Jl. Raya Tapos, RT. 06/015, Kel. Tapos", "tahun": ""},
-            {"nama": "MT. Darussa'id", "kecamatan": "Cinere", "alamat": "Jl. Masjid 1, RT. 02/02, No. 16 Cinere", "tahun": ""},
-            {"nama": "MT. Majelis Qur'an", "kecamatan": "Cinere", "alamat": "Jl. Markisa Raya, Blok A Cinere", "tahun": ""},
-            {"nama": "Husnul Khotimah", "kecamatan": "Cinere", "alamat": "No. 19, RT. 01/07 Cinere", "tahun": ""},
-            {"nama": "Tarbiyatul Aulad", "kecamatan": "Cinere", "alamat": "Jl. Puri Pesanggrahan Raya, No. 1 Cinere", "tahun": ""},
-            {"nama": "Al Hidayah", "kecamatan": "Cinere", "alamat": "Jl. Anggrek, No. 04, RT. 01/05 Cinere", "tahun": ""},
-            {"nama": "Darut Taqwa", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "Nurul Iman", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "Al Ihsan", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "Miftahul Jannah", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "Raudhatul Jannah", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "Al Barokah", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "Al Huda", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "Al Amin", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "Al Furqon", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "Al Ikhlas", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""}
-        ];
+        // Data Kelurahan (dari kelurahan.geojson)
+        const kelData = `
+        ${kel_data_json}
+        `; // Placeholder Python akan mengisi ini
+        const parsedKelData = JSON.parse(kelData);
 
         // ==========================================
-        // BAGIAN 2: LOGIKA PETA & INTERAKSI
+        // 2. LOGIKA UTAMA
         // ==========================================
-        
-        // Pusat Koordinat Kecamatan (Untuk sebaran titik)
+
         const distrikCenters = {
-            "Beji": { lat: -6.372, lng: 106.812 },
-            "Bojongsari": { lat: -6.408, lng: 106.745 },
-            "Cilodong": { lat: -6.431, lng: 106.840 },
-            "Cimanggis": { lat: -6.370, lng: 106.860 },
-            "Cinere": { lat: -6.335, lng: 106.785 },
-            "Cipayung": { lat: -6.425, lng: 106.790 },
-            "Limo": { lat: -6.365, lng: 106.775 },
-            "Pancoran Mas": { lat: -6.400, lng: 106.797 },
-            "Sawangan": { lat: -6.405, lng: 106.765 },
-            "Sukmajaya": { lat: -6.390, lng: 106.845 },
+            "Beji": { lat: -6.372, lng: 106.812 }, "Bojongsari": { lat: -6.408, lng: 106.745 },
+            "Cilodong": { lat: -6.431, lng: 106.840 }, "Cimanggis": { lat: -6.370, lng: 106.860 },
+            "Cinere": { lat: -6.335, lng: 106.785 }, "Cipayung": { lat: -6.425, lng: 106.790 },
+            "Limo": { lat: -6.365, lng: 106.775 }, "Pancoran Mas": { lat: -6.400, lng: 106.797 },
+            "Sawangan": { lat: -6.405, lng: 106.765 }, "Sukmajaya": { lat: -6.390, lng: 106.845 },
             "Tapos": { lat: -6.420, lng: 106.880 }
         };
 
         let map, table;
-        let layerKecamatan, layerKelurahan, layerPoints;
+        let layerKec, layerKel, layerPoints;
 
         $(document).ready(function() {
-            // A. Update Statistik
-            $('#total-count').text(mtData.length);
+            // A. Update Stats
+            $('#total-count').text(parsedMTData.length);
 
-            // B. Inisialisasi Tabel
+            // B. Init Table
             table = $('#mtTable').DataTable({
-                data: mtData,
+                data: parsedMTData,
                 columns: [
                     { data: null, render: (d,t,r,m) => m.row + 1 },
                     { data: 'nama', className: 'fw-bold text-primary' },
@@ -516,69 +135,61 @@
                     { data: 'alamat' }
                 ],
                 language: { url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json" },
-                pageLength: 5
+                pageLength: 5,
+                lengthMenu: [5, 10, 25, 50]
             });
 
-            // C. Inisialisasi Peta
+            // C. Init Map
             map = L.map('map').setView([-6.395, 106.810], 12);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                attribution: 'Map data &copy; OpenStreetMap | CartoDB'
+                attribution: '&copy; OpenStreetMap, CartoDB'
             }).addTo(map);
 
-            // D. Layer Control
             let layerControl = L.control.layers(null, null, { collapsed: false }).addTo(map);
 
-            // 1. Plot GeoJSON Kecamatan
-            try {
-                const geoKec = JSON.parse(kecamatanGeoJSON);
-                layerKecamatan = L.geoJSON(geoKec, {
-                    style: { color: "#3388ff", weight: 2, fillOpacity: 0.05 },
-                    onEachFeature: function(feature, layer) {
-                        // Kunci properti dari file Anda: nm_kecamatan
-                        let name = feature.properties.nm_kecamatan || "Kecamatan";
-                        layer.bindTooltip(name, { sticky: true, direction: 'center', className: 'text-primary fw-bold' });
-                        layer.on('click', function() {
-                            resetStyles();
-                            layer.setStyle({ weight: 4, fillOpacity: 0.3, color: '#0d6efd' });
-                            map.fitBounds(layer.getBounds());
-                            filterByKec(name);
-                        });
-                    }
-                }).addTo(map);
-                layerControl.addOverlay(layerKecamatan, "Batas Kecamatan");
-            } catch(e) { console.error("Err Kecamatan JSON", e); }
+            // 1. Layer Kecamatan (Garis Biru)
+            layerKec = L.geoJSON(parsedKecData, {
+                style: { color: "#0d6efd", weight: 2, fillOpacity: 0.05, dashArray: '5,5' },
+                onEachFeature: function(feature, layer) {
+                    let name = feature.properties.nm_kecamatan || "Kecamatan";
+                    layer.bindTooltip(name, { sticky: true, direction: 'center', className: 'fw-bold text-primary' });
+                    layer.on('click', function() {
+                        resetStyles();
+                        layer.setStyle({ weight: 4, fillOpacity: 0.2, color: '#0d6efd', dashArray: '' });
+                        map.fitBounds(layer.getBounds());
+                        filterByKec(name);
+                    });
+                }
+            }).addTo(map);
+            layerControl.addOverlay(layerKec, "Batas Kecamatan");
 
-            // 2. Plot GeoJSON Kelurahan
-            try {
-                const geoKel = JSON.parse(kelurahanGeoJSON);
-                layerKelurahan = L.geoJSON(geoKel, {
-                    style: { color: "#198754", weight: 1, dashArray: '4,4', fillOpacity: 0 },
-                    onEachFeature: function(feature, layer) {
-                        // Kunci properti dari file Anda: nm_kelurahan
-                        let name = feature.properties.nm_kelurahan || "Kelurahan";
-                        layer.bindTooltip(name, { sticky: true, direction: 'top' });
-                        layer.on('click', function() {
-                            resetStyles();
-                            layer.setStyle({ weight: 3, fillOpacity: 0.2, color: '#198754', dashArray: '' });
-                            map.fitBounds(layer.getBounds());
-                            filterByKel(name);
-                        });
-                    }
-                }).addTo(map); // Default nyala
-                layerControl.addOverlay(layerKelurahan, "Batas Kelurahan");
-            } catch(e) { console.error("Err Kelurahan JSON", e); }
+            // 2. Layer Kelurahan (Garis Hijau)
+            layerKel = L.geoJSON(parsedKelData, {
+                style: { color: "#198754", weight: 1, fillOpacity: 0, dashArray: '2,4' },
+                onEachFeature: function(feature, layer) {
+                    let name = feature.properties.nm_kelurahan || "Kelurahan";
+                    layer.bindTooltip(name, { sticky: true });
+                    layer.on('click', function() {
+                        resetStyles();
+                        layer.setStyle({ weight: 3, fillOpacity: 0.2, color: '#198754', dashArray: '' });
+                        map.fitBounds(layer.getBounds());
+                        filterByKel(name);
+                    });
+                }
+            }).addTo(map);
+            layerControl.addOverlay(layerKel, "Batas Kelurahan");
 
-            // 3. Plot Titik MT
+            // 3. Layer Titik MT
             let markers = [];
-            mtData.forEach(item => {
+            parsedMTData.forEach(item => {
                 let kecKey = Object.keys(distrikCenters).find(k => item.kecamatan.includes(k)) || "Pancoran Mas";
                 let base = distrikCenters[kecKey];
                 
-                // Jitter
+                // Jitter (Acak posisi sedikit agar tidak menumpuk)
                 let lat = base.lat + (Math.random() - 0.5) * 0.025;
                 let lng = base.lng + (Math.random() - 0.5) * 0.025;
 
-                let m = L.circleMarker([lat, lng], {
+                let marker = L.circleMarker([lat, lng], {
                     radius: 5,
                     fillColor: "#dc3545",
                     color: "white",
@@ -586,25 +197,26 @@
                     opacity: 1,
                     fillOpacity: 0.8
                 }).bindPopup(`
-                    <strong>${item.nama}</strong><br>
-                    <span class='badge bg-light text-dark border'>${item.kecamatan}</span><br>
-                    <small>${item.alamat}</small>
+                    <div class='text-center'>
+                        <strong class='text-primary'>${item.nama}</strong><br>
+                        <span class='badge bg-light text-dark border mt-1'>${item.kecamatan}</span>
+                        <hr class='my-1'>
+                        <small>${item.alamat}</small>
+                    </div>
                 `);
-                markers.push(m);
+                markers.push(marker);
             });
             layerPoints = L.layerGroup(markers).addTo(map);
-            layerControl.addOverlay(layerPoints, "Lokasi MT");
-
+            layerControl.addOverlay(layerPoints, "Titik Majelis Ta'lim");
         });
 
         // --- Helper Functions ---
         function resetStyles() {
-            if(layerKecamatan) layerKecamatan.resetStyle();
-            if(layerKelurahan) layerKelurahan.resetStyle();
+            if(layerKec) layerKec.resetStyle();
+            if(layerKel) layerKel.resetStyle();
         }
 
         function filterByKec(name) {
-            // Bersihkan nama (misal "Kecamatan Beji" -> "Beji")
             let clean = name.replace(/kecamatan/gi, "").trim();
             table.search(clean).draw();
         }
