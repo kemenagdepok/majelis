@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GIS Majelis Ta'lim Depok - Layer Kecamatan & Kelurahan</title>
+    <title>GIS Majelis Ta'lim Depok - Full Embed</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -11,66 +11,59 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
     <style>
-        body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .navbar { background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%); padding: 1rem; }
-        .navbar-brand { color: white !important; font-weight: bold; font-size: 1.5rem; }
-        #map { height: 600px; width: 100%; border-radius: 12px; border: 2px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 1; }
-        .map-wrapper { position: relative; }
-        .data-table-container { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-top: 20px; }
-        .badge-kec { font-size: 0.8rem; padding: 5px 10px; border-radius: 20px; }
-        /* Style Popup Leaflet */
-        .leaflet-popup-content-wrapper { border-radius: 8px; }
-        .custom-tooltip { background: transparent; border: none; box-shadow: none; font-weight: bold; color: #333; text-shadow: 1px 1px 0 #fff; }
+        body { background-color: #f8f9fa; }
+        .navbar { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); }
+        #map { height: 650px; width: 100%; border-radius: 8px; border: 2px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .badge-kec { cursor: pointer; }
+        .legend-info { font-size: 0.85rem; background: white; padding: 5px 10px; border-radius: 4px; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
-        <div class="container-fluid px-4">
-            <a class="navbar-brand" href="#"><i class="bi bi-map-fill me-2"></i>SIG Majelis Ta'lim Depok</a>
-            <div class="d-flex text-white">
-                <span id="loading-status" class="badge bg-warning text-dark me-2" style="display:none;">Memuat Peta...</span>
-                <span class="text-white-50 small align-self-center">Data: <span id="total-count">0</span> Titik</span>
-            </div>
+    <nav class="navbar navbar-dark mb-4 shadow-sm">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1"><i class="bi bi-geo-alt-fill me-2"></i>SIG Majelis Ta'lim Kota Depok</span>
+            <span class="text-white small">Total: <span id="total-count" class="fw-bold">0</span> Lokasi</span>
         </div>
     </nav>
 
-    <div class="container-fluid px-4 mb-5">
-        
+    <div class="container-fluid px-4">
         <div class="row">
-            <div class="col-12">
+            <div class="col-lg-12 mb-4">
                 <div class="card border-0 shadow-sm">
-                    <div class="card-body p-2">
-                        <div class="map-wrapper">
-                            <div id="map"></div>
+                    <div class="card-body p-2 position-relative">
+                        <div id="map"></div>
+                        <div class="position-absolute bottom-0 start-0 m-3 legend-info" style="z-index: 999;">
+                            <i class="bi bi-square-fill" style="color: #3388ff; opacity: 0.5;"></i> Batas Kecamatan<br>
+                            <i class="bi bi-square-fill" style="color: #198754; opacity: 0.3;"></i> Batas Kelurahan<br>
+                            <i class="bi bi-circle-fill" style="color: #dc3545;"></i> Lokasi MT
                         </div>
-                        <div class="d-flex justify-content-between mt-2 px-2">
-                            <small class="text-muted"><i class="bi bi-info-circle"></i> Gunakan icon layer di pojok kanan atas peta untuk mengatur tampilan wilayah.</small>
-                            <button class="btn btn-sm btn-outline-danger" onclick="resetFilter()"><i class="bi bi-x-circle"></i> Reset Filter Wilayah</button>
-                        </div>
+                    </div>
+                    <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                        <small class="text-muted"><i class="bi bi-hand-index-thumb"></i> Klik area peta untuk filter tabel di bawah.</small>
+                        <button class="btn btn-sm btn-outline-danger" onclick="resetAll()"><i class="bi bi-arrow-counterclockwise"></i> Reset Filter</button>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="row">
-            <div class="col-12">
-                <div class="data-table-container">
-                    <h5 class="mb-4 fw-bold text-primary"><i class="bi bi-table me-2"></i>Database Majelis Ta'lim</h5>
-                    <div class="table-responsive">
-                        <table id="mtTable" class="table table-hover w-100">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>No</th>
-                                    <th>Nama Majelis Ta'lim</th>
-                                    <th>Kecamatan</th>
-                                    <th>Kelurahan (Est)</th>
-                                    <th>Alamat Lengkap</th>
-                                    <th>Tahun</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+            <div class="col-lg-12 mb-5">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white fw-bold"><i class="bi bi-table me-2"></i>Data Detail Majelis Ta'lim</div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table id="mtTable" class="table table-hover table-striped w-100">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Nama Majelis Ta'lim</th>
+                                        <th>Kecamatan</th>
+                                        <th>Kelurahan (Est)</th>
+                                        <th>Alamat</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -85,9 +78,21 @@
 
     <script>
         // ==========================================
-        // 1. DATABASE LENGKAP (439 RECORD)
+        // BAGIAN 1: DATA GEOJSON (Ditanam Langsung)
         // ==========================================
-        const allData = [
+        
+        // Data Kecamatan dari file user (nm_kecamatan)
+        const kecamatanGeoJSON = `
+        ${kec_json_str}
+        `;
+
+        // Data Kelurahan dari file user (nm_kelurahan)
+        const kelurahanGeoJSON = `
+        ${kel_json_str}
+        `;
+
+        // Data Majelis Ta'lim (439 Record)
+        const mtData = [
             {"nama": "MT. Nurul Mubtadi-ien", "kecamatan": "Cipayung", "alamat": "Jl. Gg. Al Barkah, No. 59, RT. 07 RW. 08, Pondok Terong, Kel. Bojong, Kec. Cipayung", "tahun": ""},
             {"nama": "MT. Nurul Qolbi", "kecamatan": "Cipayung", "alamat": "Kp. Lio, RT. 02/08, Ke;. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
             {"nama": "MT. Al Hidayah", "kecamatan": "Cipayung", "alamat": "Kp. Lio, RT. 02/08, Ke;. Bojong Pondok Terong, Kec. Cipayung", "tahun": ""},
@@ -471,27 +476,14 @@
             {"nama": "Al Huda", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
             {"nama": "Al Amin", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
             {"nama": "Al Furqon", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "Al Ikhlas", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "MT. Darussa'id", "kecamatan": "Cinere", "alamat": "Jl. Masjid 1, RT. 02/02, No. 16 Cinere", "tahun": ""},
-            {"nama": "MT. Majelis Qur'an", "kecamatan": "Cinere", "alamat": "Jl. Markisa Raya, Blok A Cinere", "tahun": ""},
-            {"nama": "Husnul Khotimah", "kecamatan": "Cinere", "alamat": "No. 19, RT. 01/07 Cinere", "tahun": ""},
-            {"nama": "Tarbiyatul Aulad", "kecamatan": "Cinere", "alamat": "Jl. Puri Pesanggrahan Raya, No. 1 Cinere", "tahun": ""},
-            {"nama": "Al Hidayah", "kecamatan": "Cinere", "alamat": "Jl. Anggrek, No. 04, RT. 01/05 Cinere", "tahun": ""},
-            {"nama": "Darut Taqwa", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "Nurul Iman", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "Al Ihsan", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "Miftahul Jannah", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "Raudhatul Jannah", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "Al Barokah", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "Al Huda", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "Al Amin", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
-            {"nama": "Al Furqon", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""},
             {"nama": "Al Ikhlas", "kecamatan": "Cinere", "alamat": "Jl. Cilobak Raya, RT. 01/07, Pangkalan Jati Cinere", "tahun": ""}
         ];
 
         // ==========================================
-        // 2. CONFIGURASI & LOGIC
+        // BAGIAN 2: LOGIKA PETA & INTERAKSI
         // ==========================================
+        
+        // Pusat Koordinat Kecamatan (Untuk sebaran titik)
         const distrikCenters = {
             "Beji": { lat: -6.372, lng: 106.812 },
             "Bojongsari": { lat: -6.408, lng: 106.745 },
@@ -506,146 +498,130 @@
             "Tapos": { lat: -6.420, lng: 106.880 }
         };
 
-        let map, table, layerControl;
-        let pointsLayer, kecamatanLayer, kelurahanLayer;
+        let map, table;
+        let layerKecamatan, layerKelurahan, layerPoints;
 
         $(document).ready(function() {
-            // A. UPDATE STATS
-            $('#total-count').text(allData.length);
+            // A. Update Statistik
+            $('#total-count').text(mtData.length);
 
-            // B. TABLE INIT
+            // B. Inisialisasi Tabel
             table = $('#mtTable').DataTable({
-                data: allData,
+                data: mtData,
                 columns: [
                     { data: null, render: (d,t,r,m) => m.row + 1 },
-                    { data: 'nama', className: 'fw-bold' },
-                    { data: 'kecamatan', render: d => `<span class="badge bg-secondary badge-kec">${d}</span>` },
-                    { data: null, render: d => detectKelurahan(d.alamat, d.kecamatan) || '-' },
-                    { data: 'alamat' },
-                    { data: 'tahun' }
+                    { data: 'nama', className: 'fw-bold text-primary' },
+                    { data: 'kecamatan', render: d => `<span class="badge bg-secondary badge-kec" onclick="filterByKec('${d}')">${d}</span>` },
+                    { data: null, render: d => detectKelurahan(d.alamat) || '-' },
+                    { data: 'alamat' }
                 ],
                 language: { url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json" },
-                pageLength: 5,
-                lengthMenu: [5, 10, 25, 50]
+                pageLength: 5
             });
 
-            // C. MAP INIT
+            // C. Inisialisasi Peta
             map = L.map('map').setView([-6.395, 106.810], 12);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap & CartoDB'
+                attribution: 'Map data &copy; OpenStreetMap | CartoDB'
             }).addTo(map);
 
-            // D. LAYER CONTROL INIT
-            layerControl = L.control.layers(null, null, { collapsed: false }).addTo(map);
+            // D. Layer Control
+            let layerControl = L.control.layers(null, null, { collapsed: false }).addTo(map);
 
-            // E. LOAD POINTS DATA (MT)
+            // 1. Plot GeoJSON Kecamatan
+            try {
+                const geoKec = JSON.parse(kecamatanGeoJSON);
+                layerKecamatan = L.geoJSON(geoKec, {
+                    style: { color: "#3388ff", weight: 2, fillOpacity: 0.05 },
+                    onEachFeature: function(feature, layer) {
+                        // Kunci properti dari file Anda: nm_kecamatan
+                        let name = feature.properties.nm_kecamatan || "Kecamatan";
+                        layer.bindTooltip(name, { sticky: true, direction: 'center', className: 'text-primary fw-bold' });
+                        layer.on('click', function() {
+                            resetStyles();
+                            layer.setStyle({ weight: 4, fillOpacity: 0.3, color: '#0d6efd' });
+                            map.fitBounds(layer.getBounds());
+                            filterByKec(name);
+                        });
+                    }
+                }).addTo(map);
+                layerControl.addOverlay(layerKecamatan, "Batas Kecamatan");
+            } catch(e) { console.error("Err Kecamatan JSON", e); }
+
+            // 2. Plot GeoJSON Kelurahan
+            try {
+                const geoKel = JSON.parse(kelurahanGeoJSON);
+                layerKelurahan = L.geoJSON(geoKel, {
+                    style: { color: "#198754", weight: 1, dashArray: '4,4', fillOpacity: 0 },
+                    onEachFeature: function(feature, layer) {
+                        // Kunci properti dari file Anda: nm_kelurahan
+                        let name = feature.properties.nm_kelurahan || "Kelurahan";
+                        layer.bindTooltip(name, { sticky: true, direction: 'top' });
+                        layer.on('click', function() {
+                            resetStyles();
+                            layer.setStyle({ weight: 3, fillOpacity: 0.2, color: '#198754', dashArray: '' });
+                            map.fitBounds(layer.getBounds());
+                            filterByKel(name);
+                        });
+                    }
+                }).addTo(map); // Default nyala
+                layerControl.addOverlay(layerKelurahan, "Batas Kelurahan");
+            } catch(e) { console.error("Err Kelurahan JSON", e); }
+
+            // 3. Plot Titik MT
             let markers = [];
-            allData.forEach(item => {
+            mtData.forEach(item => {
                 let kecKey = Object.keys(distrikCenters).find(k => item.kecamatan.includes(k)) || "Pancoran Mas";
                 let base = distrikCenters[kecKey];
                 
-                // Jitter (acak posisi sedikit)
+                // Jitter
                 let lat = base.lat + (Math.random() - 0.5) * 0.025;
                 let lng = base.lng + (Math.random() - 0.5) * 0.025;
 
-                // Warna Dot
-                let color = "#333";
-                if(item.kecamatan.includes('Tapos') || item.kecamatan.includes('Cimanggis')) color = "#e63946";
-                else if(item.kecamatan.includes('Cipayung') || item.kecamatan.includes('Sawangan')) color = "#2a9d8f";
-                else if(item.kecamatan.includes('Beji') || item.kecamatan.includes('Limo')) color = "#f4a261";
-                else if(item.kecamatan.includes('Sukmajaya')) color = "#457b9d";
-
-                let marker = L.circleMarker([lat, lng], {
+                let m = L.circleMarker([lat, lng], {
                     radius: 5,
-                    fillColor: color,
+                    fillColor: "#dc3545",
                     color: "white",
                     weight: 1,
                     opacity: 1,
-                    fillOpacity: 0.9
+                    fillOpacity: 0.8
                 }).bindPopup(`
-                    <div class='text-center'>
-                        <strong>${item.nama}</strong><br>
-                        <span class='badge bg-light text-dark border'>${item.kecamatan}</span>
-                        <hr class='my-1'>
-                        <small>${item.alamat}</small>
-                    </div>
+                    <strong>${item.nama}</strong><br>
+                    <span class='badge bg-light text-dark border'>${item.kecamatan}</span><br>
+                    <small>${item.alamat}</small>
                 `);
-                markers.push(marker);
+                markers.push(m);
             });
-            pointsLayer = L.layerGroup(markers).addTo(map);
-            layerControl.addOverlay(pointsLayer, "Titik Majelis Ta'lim");
-
-            // F. LOAD KECAMATAN GEOJSON
-            $('#loading-status').show();
-            $.getJSON("/kecamatan.geojson", function(data) {
-                kecamatanLayer = L.geoJSON(data, {
-                    style: { color: "#0d6efd", weight: 2, fillOpacity: 0.05, dashArray: '5,5' },
-                    onEachFeature: function(feature, layer) {
-                        // Mencari properti nama (sesuaikan jika nama field berbeda di GeoJSON Anda)
-                        let name = feature.properties.NAMOBJ || feature.properties.WADMKC || feature.properties.name || "Kecamatan";
-                        
-                        layer.bindTooltip(name, { sticky: true, className: 'custom-tooltip' });
-                        
-                        layer.on('click', function() {
-                            resetStyles();
-                            layer.setStyle({ weight: 4, color: "#0d6efd", fillOpacity: 0.2, dashArray: '' });
-                            map.fitBounds(layer.getBounds());
-                            
-                            // Filter Table by Kecamatan Name
-                            let cleanName = name.replace("Kecamatan", "").trim();
-                            table.search(cleanName).draw();
-                        });
-                    }
-                }).addTo(map); // Default tampil
-                layerControl.addOverlay(kecamatanLayer, "Batas Kecamatan");
-                $('#loading-status').hide();
-            }).fail(function() {
-                console.log("Gagal memuat /kecamatan.geojson");
-                $('#loading-status').text("Gagal Load Peta").addClass("bg-danger");
-            });
-
-            // G. LOAD KELURAHAN GEOJSON
-            $.getJSON("/kelurahan.geojson", function(data) {
-                kelurahanLayer = L.geoJSON(data, {
-                    style: { color: "#198754", weight: 1, fillOpacity: 0.0, dashArray: '2,4' },
-                    onEachFeature: function(feature, layer) {
-                        let name = feature.properties.NAMOBJ || feature.properties.WADMKD || feature.properties.name || "Kelurahan";
-                        
-                        layer.bindTooltip(name, { sticky: true, className: 'custom-tooltip' });
-                        
-                        layer.on('click', function() {
-                            resetStyles();
-                            layer.setStyle({ weight: 3, color: "#198754", fillOpacity: 0.2, dashArray: '' });
-                            map.fitBounds(layer.getBounds());
-
-                            // Filter Table by Kelurahan Name
-                            let cleanName = name.replace("Kelurahan", "").replace("Desa", "").trim();
-                            table.search(cleanName).draw();
-                        });
-                    }
-                });
-                // Tidak addTo(map) agar tidak menumpuk diawal, user bisa menyalakan lewat control
-                layerControl.addOverlay(kelurahanLayer, "Batas Kelurahan");
-            }).fail(function() {
-                console.log("Gagal memuat /kelurahan.geojson");
-            });
+            layerPoints = L.layerGroup(markers).addTo(map);
+            layerControl.addOverlay(layerPoints, "Lokasi MT");
 
         });
 
+        // --- Helper Functions ---
         function resetStyles() {
-            if(kecamatanLayer) kecamatanLayer.resetStyle();
-            if(kelurahanLayer) kelurahanLayer.resetStyle();
+            if(layerKecamatan) layerKecamatan.resetStyle();
+            if(layerKelurahan) layerKelurahan.resetStyle();
         }
 
-        function resetFilter() {
-            map.setView([-6.395, 106.810], 12);
+        function filterByKec(name) {
+            // Bersihkan nama (misal "Kecamatan Beji" -> "Beji")
+            let clean = name.replace(/kecamatan/gi, "").trim();
+            table.search(clean).draw();
+        }
+
+        function filterByKel(name) {
+            let clean = name.replace(/kelurahan|desa/gi, "").trim();
+            table.search(clean).draw();
+        }
+
+        function resetAll() {
             resetStyles();
+            map.setView([-6.395, 106.810], 12);
             table.search('').draw();
         }
 
-        function detectKelurahan(addr, kec) {
+        function detectKelurahan(addr) {
             if(!addr) return "";
-            // Regex sederhana untuk menangkap kata setelah "Kel." atau "Kelurahan"
             let match = addr.match(/(?:Kel\.|Kelurahan)\s*([A-Za-z\s]+?)(?:,|$)/i);
             return match ? match[1].trim() : "";
         }
